@@ -11,6 +11,9 @@ type EventDetail = {
   contributions_close_at?: string;
   team_a_id: string;
   team_b_id: string;
+  winning_team_id: string | null;
+  billy_support_team_id: string | null;
+  curse_success: boolean | null;
   team_a: { name: string } | { name: string }[] | null;
   team_b: { name: string } | { name: string }[] | null;
 };
@@ -58,6 +61,9 @@ export default function EventDetailScreen() {
         contributions_close_at,
         team_a_id,
         team_b_id,
+        winning_team_id,
+        billy_support_team_id,
+        curse_success,
         team_a:team_a_id ( name ),
         team_b:team_b_id ( name )
       `
@@ -99,7 +105,6 @@ export default function EventDetailScreen() {
       .single();
 
     if (error) {
-      Alert.alert("Billy state error", error.message);
       return;
     }
 
@@ -138,7 +143,7 @@ export default function EventDetailScreen() {
   };
 
   const contributeSnack = async (supportedTeamId: string) => {
-    if (!id || isLocked) return;
+    if (!id || isLocked || isFinal) return;
 
     setSubmitting(true);
 
@@ -173,12 +178,29 @@ export default function EventDetailScreen() {
   const isLocked = event.contributions_close_at
     ? new Date() >= new Date(event.contributions_close_at)
     : false;
+  const isFinal = event.status === "final";
 
   let billyLeaningText = "Billy is undecided";
-  if (billyState?.billy_leaning_team_id === event.team_a_id) {
+  if (event.billy_support_team_id === event.team_a_id) {
+    billyLeaningText = `Billy supported ${teamAName}`;
+  } else if (event.billy_support_team_id === event.team_b_id) {
+    billyLeaningText = `Billy supported ${teamBName}`;
+  } else if (!isFinal && billyState?.billy_leaning_team_id === event.team_a_id) {
     billyLeaningText = `Billy is leaning toward ${teamAName}`;
-  } else if (billyState?.billy_leaning_team_id === event.team_b_id) {
+  } else if (!isFinal && billyState?.billy_leaning_team_id === event.team_b_id) {
     billyLeaningText = `Billy is leaning toward ${teamBName}`;
+  }
+
+  let finalResultText = "";
+  if (isFinal) {
+    const winningName =
+      event.winning_team_id === event.team_a_id ? teamAName :
+      event.winning_team_id === event.team_b_id ? teamBName :
+      "Unknown";
+
+    finalResultText = event.curse_success
+      ? `Curse worked. ${winningName} won while Billy supported the other side.`
+      : `Curse failed. ${winningName} won.`;
   }
 
   return (
@@ -188,7 +210,9 @@ export default function EventDetailScreen() {
 
       <View style={styles.card}>
         <Text style={styles.label}>Status</Text>
-        <Text style={styles.value}>{isLocked ? "locked" : event.status}</Text>
+        <Text style={styles.value}>
+          {isFinal ? "final" : isLocked ? "locked" : event.status}
+        </Text>
 
         <Text style={styles.label}>Start</Text>
         <Text style={styles.value}>{new Date(event.scheduled_start).toLocaleString()}</Text>
@@ -205,6 +229,13 @@ export default function EventDetailScreen() {
 
         <Text style={styles.label}>Billy status</Text>
         <Text style={styles.billyValue}>{billyLeaningText}</Text>
+
+        {isFinal ? (
+          <>
+            <Text style={styles.label}>Final result</Text>
+            <Text style={styles.finalValue}>{finalResultText}</Text>
+          </>
+        ) : null}
       </View>
 
       <Text style={styles.sectionTitle}>Current Support Totals</Text>
@@ -213,12 +244,12 @@ export default function EventDetailScreen() {
         <Text style={styles.eventMatchup}>{teamAName}</Text>
         <Text style={styles.eventMeta}>Snacks: {teamATotal}</Text>
         <Pressable
-          style={[styles.button, (submitting || isLocked) && styles.buttonDisabled]}
-          disabled={submitting || isLocked}
+          style={[styles.button, (submitting || isLocked || isFinal) && styles.buttonDisabled]}
+          disabled={submitting || isLocked || isFinal}
           onPress={() => contributeSnack(event.team_a_id)}
         >
           <Text style={styles.buttonText}>
-            {isLocked ? "Event Locked" : `Support ${teamAName}`}
+            {isFinal ? "Event Final" : isLocked ? "Event Locked" : `Support ${teamAName}`}
           </Text>
         </Pressable>
       </View>
@@ -227,12 +258,12 @@ export default function EventDetailScreen() {
         <Text style={styles.eventMatchup}>{teamBName}</Text>
         <Text style={styles.eventMeta}>Snacks: {teamBTotal}</Text>
         <Pressable
-          style={[styles.button, (submitting || isLocked) && styles.buttonDisabled]}
-          disabled={submitting || isLocked}
+          style={[styles.button, (submitting || isLocked || isFinal) && styles.buttonDisabled]}
+          disabled={submitting || isLocked || isFinal}
           onPress={() => contributeSnack(event.team_b_id)}
         >
           <Text style={styles.buttonText}>
-            {isLocked ? "Event Locked" : `Support ${teamBName}`}
+            {isFinal ? "Event Final" : isLocked ? "Event Locked" : `Support ${teamBName}`}
           </Text>
         </Pressable>
       </View>
@@ -284,6 +315,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     marginTop: 2,
+  },
+  finalValue: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginTop: 4,
   },
   sectionTitle: {
     fontSize: 22,
