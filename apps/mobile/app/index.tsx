@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet, Pressable, Alert, FlatList } from "react-native";
 import { Session } from "@supabase/supabase-js";
+import { router } from "expo-router";
 import { supabase } from "../lib/supabase";
 import LoginScreen from "./login";
-import { router } from "expo-router";
 
 type Profile = {
   id: string;
@@ -20,9 +20,19 @@ type EventItem = {
   round_name: string;
   status: string;
   scheduled_start: string;
+  contributions_close_at: string;
+  billy_support_team_id: string | null;
+  winning_team_id: string | null;
+  curse_success: boolean | null;
+  team_a_id: string;
+  team_b_id: string;
   team_a: { name: string } | { name: string }[] | null;
   team_b: { name: string } | { name: string }[] | null;
 };
+
+type SectionRow =
+  | { type: "section"; title: string }
+  | { type: "event"; event: EventItem };
 
 function isSameUtcDay(a: string | null, b: Date) {
   if (!a) return false;
@@ -37,6 +47,14 @@ function isSameUtcDay(a: string | null, b: Date) {
 function getTeamName(team: EventItem["team_a"]) {
   if (!team) return "Unknown";
   return Array.isArray(team) ? (team[0]?.name ?? "Unknown") : team.name;
+}
+
+function getDisplayStatus(event: EventItem) {
+  if (event.status === "final") return "final";
+  if (event.contributions_close_at && new Date() >= new Date(event.contributions_close_at)) {
+    return "locked";
+  }
+  return "open";
 }
 
 export default function HomeScreen() {
@@ -99,6 +117,12 @@ export default function HomeScreen() {
         round_name,
         status,
         scheduled_start,
+        contributions_close_at,
+        billy_support_team_id,
+        winning_team_id,
+        curse_success,
+        team_a_id,
+        team_b_id,
         team_a:team_a_id ( name ),
         team_b:team_b_id ( name )
       `
@@ -176,10 +200,37 @@ export default function HomeScreen() {
 
   const alreadyClaimedToday = isSameUtcDay(profile?.last_daily_claim_at ?? null, new Date());
 
+  const rows = useMemo(() => {
+    const open = events.filter((e) => getDisplayStatus(e) === "open");
+    const locked = events.filter((e) => getDisplayStatus(e) === "locked");
+    const final = events.filter((e) => getDisplayStatus(e) === "final");
+
+    const result: SectionRow[] = [];
+
+    if (open.length) {
+      result.push({ type: "section", title: "Open Events" });
+      open.forEach((event) => result.push({ type: "event", event }));
+    }
+
+    if (locked.length) {
+      result.push({ type: "section", title: "Locked Events" });
+      locked.forEach((event) => result.push({ type: "event", event }));
+    }
+
+    if (final.length) {
+      result.push({ type: "section", title: "Final Events" });
+      final.forEach((event) => result.push({ type: "event", event }));
+    }
+
+    return result;
+  }, [events]);
+
   return (
     <FlatList
-      data={events}
-      keyExtractor={(item) => item.id}
+      data={rows}
+      keyExtractor={(item, index) =>
+        item.type === "section" ? `section-${item.title}-${index}` : item.event.id
+      }
       contentContainerStyle={styles.container}
       ListHeaderComponent={
         <View>
@@ -222,36 +273,58 @@ export default function HomeScreen() {
             </Text>
           </Pressable>
 
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={() => router.push("/settings" as any)}
+          >
+            <Text style={styles.secondaryButtonText}>Settings / About</Text>
+          </Pressable>
+
           <Pressable style={styles.secondaryButton} onPress={signOut}>
             <Text style={styles.secondaryButtonText}>Logout</Text>
           </Pressable>
 
-          <Text style={styles.sectionTitle}>Upcoming Events</Text>
           {eventsLoading ? <Text style={styles.info}>Loading events...</Text> : null}
-          {!eventsLoading && events.length === 0 ? (
+          {!eventsLoading && rows.length === 0 ? (
             <Text style={styles.info}>No events found.</Text>
           ) : null}
         </View>
       }
-      renderItem={({ item }) => (
-        <Pressable
-         onPress={() => router.push(`/event/${item.id}` as any)}
-        style={styles.eventCard}
-  >
-    <Text style={styles.eventMatchup}>
-      {getTeamName(item.team_a)} vs {getTeamName(item.team_b)}
-    </Text>
+      renderItem={({ item }) => {
+        if (item.type === "section") {
+          return <Text style={styles.sectionTitle}>{item.title}</Text>;
+        }
 
-    <Text style={styles.eventMeta}>Round: {item.round_name}</Text>
-    <Text style={styles.eventMeta}>Status: {item.status}</Text>
+        const event = item.event;
+        const teamA = getTeamName(event.team_a);
+        const teamB = getTeamName(event.team_b);
+        const displayStatus = getDisplayStatus(event);
 
-    <Text style={styles.eventMeta}>
-      Start: {new Date(item.scheduled_start).toLocaleString()}
-    </Text>
+        let resultText = "";
+        if (displayStatus === "final") {
+          resultText = event.curse_success ? "Billy delivered the curse." : "Billy failed to deliver.";
+        }
 
-    <Text style={styles.eventLink}>Open Event</Text>
-  </Pressable>
-      )}
+        return (
+          <Pressable
+            onPress={() => router.push(`/event/${event.id}` as any)}
+            style={styles.eventCard}
+          >
+            <Text style={styles.eventMatchup}>
+              {teamA} vs {teamB}
+            </Text>
+            <Text style={styles.eventMeta}>Round: {event.round_name}</Text>
+            <Text style={styles.eventMeta}>Status: {displayStatus}</Text>
+            <Text style={styles.eventMeta}>
+              Start: {new Date(event.scheduled_start).toLocaleString()}
+            </Text>
+            {resultText ? <Text style={styles.resultText}>{resultText}</Text> : null}
+            <Text style={styles.eventLink}>
+              {displayStatus === "final" ? "View Result" : "Open Event"}
+            </Text>
+          </Pressable>
+        );
+      }}
     />
   );
 }
@@ -311,7 +384,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#ddd",
-    marginBottom: 24,
+    marginBottom: 10,
   },
   secondaryButtonText: {
     fontWeight: "600",
@@ -319,6 +392,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 22,
     fontWeight: "700",
+    marginTop: 18,
     marginBottom: 12,
   },
   info: {
@@ -342,9 +416,13 @@ const styles = StyleSheet.create({
     color: "#666",
     marginTop: 2,
   },
+  resultText: {
+    marginTop: 8,
+    fontWeight: "600",
+  },
   eventLink: {
-  marginTop: 10,
-  fontWeight: "700",
-  color: "#111",
-},
+    marginTop: 10,
+    fontWeight: "700",
+    color: "#111",
+  },
 });

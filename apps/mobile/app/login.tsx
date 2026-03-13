@@ -1,13 +1,22 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet, Alert } from "react-native";
+import { View, Text, TextInput, Pressable, StyleSheet, Alert, ScrollView } from "react-native";
 import { supabase } from "../lib/supabase";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const signUp = async () => {
+    if (!agreed) {
+      Alert.alert(
+        "Agreement required",
+        "You must agree that Billy the Jinx is for entertainment purposes only."
+      );
+      return;
+    }
+
     setLoading(true);
 
     const { error } = await supabase.auth.signUp({
@@ -41,7 +50,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Billy the Jinx</Text>
       <Text style={styles.subtitle}>Sign in to feed Billy</Text>
 
@@ -62,6 +71,28 @@ export default function LoginScreen() {
         onChangeText={setPassword}
       />
 
+      <View style={styles.disclaimerCard}>
+        <Text style={styles.disclaimerTitle}>Entertainment Notice</Text>
+        <Text style={styles.disclaimerText}>
+          Billy the Jinx is a fictional entertainment experience for sports fans.
+          Snack contributions and Billy’s “curse” are game mechanics only and do
+          not affect real sporting events or outcomes.
+        </Text>
+        <Text style={styles.disclaimerText}>
+          This app does not involve gambling or real-money wagering.
+        </Text>
+
+        <Pressable
+          style={[styles.checkboxRow, agreed && styles.checkboxRowActive]}
+          onPress={() => setAgreed(!agreed)}
+        >
+          <Text style={styles.checkbox}>{agreed ? "☑" : "☐"}</Text>
+          <Text style={styles.checkboxLabel}>
+            I understand this app is for entertainment purposes only.
+          </Text>
+        </Pressable>
+      </View>
+
       <Pressable style={styles.button} onPress={signIn} disabled={loading}>
         <Text style={styles.buttonText}>{loading ? "Please wait..." : "Login"}</Text>
       </Pressable>
@@ -69,13 +100,13 @@ export default function LoginScreen() {
       <Pressable style={styles.secondaryButton} onPress={signUp} disabled={loading}>
         <Text style={styles.secondaryButtonText}>Create Account</Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "center",
     padding: 24,
     backgroundColor: "#fff",
@@ -96,6 +127,44 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 14,
     marginBottom: 12,
+  },
+  disclaimerCard: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+  disclaimerTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  disclaimerText: {
+    color: "#555",
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 10,
+    padding: 10,
+  },
+  checkboxRowActive: {
+    borderColor: "#111",
+  },
+  checkbox: {
+    fontSize: 20,
+    marginRight: 10,
+  },
+  checkboxLabel: {
+    flex: 1,
+    lineHeight: 20,
+    fontWeight: "600",
   },
   button: {
     backgroundColor: "#111",
