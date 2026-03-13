@@ -280,6 +280,13 @@ export default function HomeScreen() {
             <Text style={styles.secondaryButtonText}>Settings / About</Text>
           </Pressable>
 
+<Pressable
+  style={styles.secondaryButton}
+  onPress={() => router.push("/herd" as any)}
+>
+  <Text style={styles.secondaryButtonText}>My Herd</Text>
+</Pressable>
+
           <Pressable style={styles.secondaryButton} onPress={signOut}>
             <Text style={styles.secondaryButtonText}>Logout</Text>
           </Pressable>
