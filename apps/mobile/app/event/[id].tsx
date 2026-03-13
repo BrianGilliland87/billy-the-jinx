@@ -268,6 +268,15 @@ export default function EventDetailScreen() {
         </Pressable>
       </View>
 
+{isFinal ? (
+  <Pressable
+    style={styles.button}
+    onPress={() => router.push(`/result/${event.id}` as any)}
+  >
+    <Text style={styles.buttonText}>Open Billy Result</Text>
+  </Pressable>
+) : null}
+
       <Pressable style={styles.secondaryButton} onPress={() => router.back()}>
         <Text style={styles.secondaryButtonText}>Back</Text>
       </Pressable>

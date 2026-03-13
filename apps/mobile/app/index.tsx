@@ -307,7 +307,13 @@ export default function HomeScreen() {
 
         return (
           <Pressable
-            onPress={() => router.push(`/event/${event.id}` as any)}
+            onPress={() =>
+  router.push(
+    getDisplayStatus(event) === "final"
+      ? (`/result/${event.id}` as any)
+      : (`/event/${event.id}` as any)
+  )
+}
             style={styles.eventCard}
           >
             <Text style={styles.eventMatchup}>
@@ -320,7 +326,7 @@ export default function HomeScreen() {
             </Text>
             {resultText ? <Text style={styles.resultText}>{resultText}</Text> : null}
             <Text style={styles.eventLink}>
-              {displayStatus === "final" ? "View Result" : "Open Event"}
+              {displayStatus === "final" ? "View Billy Result" : "Open Event"}
             </Text>
           </Pressable>
         );
