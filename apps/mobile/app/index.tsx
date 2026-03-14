@@ -185,6 +185,14 @@ export default function HomeScreen() {
     }
 
     await loadProfile(session.user.id);
+    await supabase.rpc("create_notification_for_user", {
+      p_user_id: session.user.id,
+      p_event_id: null,
+      p_type: "daily_snack",
+      p_title: "Daily snack claimed",
+      p_body: "Billy gave you 1 free snack for today.",
+  });
+  
     Alert.alert("Daily snack claimed", "Billy gave you 1 snack.");
   };
 
@@ -280,12 +288,19 @@ export default function HomeScreen() {
             <Text style={styles.secondaryButtonText}>Settings / About</Text>
           </Pressable>
 
-<Pressable
-  style={styles.secondaryButton}
-  onPress={() => router.push("/herd" as any)}
->
-  <Text style={styles.secondaryButtonText}>My Herd</Text>
-</Pressable>
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={() => router.push("/herd" as any)}
+          >
+            <Text style={styles.secondaryButtonText}>My Herd</Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={() => router.push("/notifications" as any)}
+          >
+            <Text style={styles.secondaryButtonText}>Notifications</Text>
+          </Pressable>
 
           <Pressable style={styles.secondaryButton} onPress={signOut}>
             <Text style={styles.secondaryButtonText}>Logout</Text>
