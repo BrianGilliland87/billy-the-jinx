@@ -303,6 +303,13 @@ export default function HomeScreen() {
             <Text style={styles.secondaryButtonText}>Notifications</Text>
           </Pressable>
 
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={() => router.push("/store" as any)}
+          >
+            <Text style={styles.secondaryButtonText}>Snack Store</Text>
+          </Pressable>
+
           <Pressable style={styles.secondaryButton} onPress={signOut}>
             <Text style={styles.secondaryButtonText}>Logout</Text>
           </Pressable>
