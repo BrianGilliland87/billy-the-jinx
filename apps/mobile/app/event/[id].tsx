@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Pressable, Alert, ScrollView } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { supabase } from "../../lib/supabase";
+import { BillyColors } from "../../lib/theme";
 
 type EventDetail = {
   id: string;
@@ -228,7 +229,11 @@ export default function EventDetailScreen() {
         <Text style={styles.value}>{profileBalance}</Text>
 
         <Text style={styles.label}>Billy status</Text>
-        <Text style={styles.billyValue}>{billyLeaningText}</Text>
+        <Text style={styles.billyValue}>
+           {isFinal
+            ? billyLeaningText
+          : `🪄 ${billyLeaningText}`}
+        </Text>
 
         {isFinal ? (
           <>
@@ -286,94 +291,104 @@ export default function EventDetailScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 64,
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    backgroundColor: "#fff",
-    flexGrow: 1,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 16,
-    marginBottom: 20,
-    color: "#555",
-  },
-  card: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    backgroundColor: "#fff",
-  },
-  label: {
-    fontSize: 12,
-    color: "#666",
-    marginTop: 10,
-  },
-  value: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginTop: 2,
-  },
-  billyValue: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginTop: 2,
-  },
-  finalValue: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginTop: 4,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 12,
-  },
-  eventCard: {
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 12,
-    marginBottom: 12,
-    backgroundColor: "#fff",
-  },
-  eventMatchup: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  eventMeta: {
-    color: "#666",
-    marginBottom: 10,
-  },
-  button: {
-    backgroundColor: "#111",
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  buttonDisabled: {
-    backgroundColor: "#999",
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    marginTop: 10,
-  },
-  secondaryButtonText: {
-    fontWeight: "600",
-  },
+  paddingTop: 64,
+  paddingHorizontal: 20,
+  paddingBottom: 40,
+  backgroundColor: BillyColors.background,
+  flexGrow: 1,
+},
+title: {
+  fontSize: 30,
+  fontWeight: "800",
+  marginBottom: 6,
+  color: BillyColors.primary,
+},
+subtitle: {
+  fontSize: 16,
+  marginBottom: 20,
+  color: BillyColors.mutedText,
+},
+card: {
+  borderWidth: 1,
+  borderColor: BillyColors.border,
+  borderRadius: 16,
+  padding: 16,
+  marginBottom: 20,
+  backgroundColor: BillyColors.card,
+},
+label: {
+  fontSize: 12,
+  color: BillyColors.mutedText,
+  marginTop: 10,
+  textTransform: "uppercase",
+  letterSpacing: 0.5,
+},
+value: {
+  fontSize: 18,
+  fontWeight: "700",
+  marginTop: 2,
+  color: BillyColors.text,
+},
+billyValue: {
+  fontSize: 20,
+  fontWeight: "800",
+  marginTop: 4,
+  color: BillyColors.primary,
+},
+finalValue: {
+  fontSize: 16,
+  fontWeight: "700",
+  marginTop: 4,
+  color: BillyColors.text,
+},
+sectionTitle: {
+  fontSize: 22,
+  fontWeight: "800",
+  marginBottom: 12,
+  color: BillyColors.primary,
+},
+eventCard: {
+  padding: 16,
+  borderWidth: 1,
+  borderColor: BillyColors.border,
+  borderRadius: 16,
+  marginBottom: 12,
+  backgroundColor: BillyColors.card,
+},
+eventMatchup: {
+  fontSize: 18,
+  fontWeight: "800",
+  marginBottom: 6,
+  color: BillyColors.text,
+},
+eventMeta: {
+  color: BillyColors.mutedText,
+  marginBottom: 10,
+},
+button: {
+  backgroundColor: BillyColors.primary,
+  padding: 14,
+  borderRadius: 12,
+  alignItems: "center",
+},
+buttonDisabled: {
+  backgroundColor: "#9f96aa",
+},
+buttonText: {
+  color: "#fff",
+  fontWeight: "700",
+},
+secondaryButton: {
+  padding: 14,
+  borderRadius: 12,
+  alignItems: "center",
+  borderWidth: 1,
+  borderColor: BillyColors.border,
+  marginTop: 10,
+  backgroundColor: BillyColors.card,
+},
+secondaryButtonText: {
+  fontWeight: "700",
+  color: BillyColors.text,
+},
 });

@@ -4,6 +4,7 @@ import { Session } from "@supabase/supabase-js";
 import { router } from "expo-router";
 import { supabase } from "../lib/supabase";
 import LoginScreen from "./login";
+import { BillyColors } from "../lib/theme";
 
 type Profile = {
   id: string;
@@ -330,13 +331,20 @@ export default function HomeScreen() {
         return (
           <Pressable
             onPress={() =>
-  router.push(
-    getDisplayStatus(event) === "final"
-      ? (`/result/${event.id}` as any)
-      : (`/event/${event.id}` as any)
-  )
-}
-            style={styles.eventCard}
+            router.push(
+            getDisplayStatus(event) === "final"
+             ? (`/result/${event.id}` as any)
+              : (`/event/${event.id}` as any)
+        )
+      }
+            style={[
+  styles.eventCard,
+  getDisplayStatus(event) === "open"
+    ? { backgroundColor: BillyColors.openBg }
+    : getDisplayStatus(event) === "locked"
+    ? { backgroundColor: BillyColors.lockedBg }
+    : { backgroundColor: BillyColors.finalBg },
+]}
           >
             <Text style={styles.eventMatchup}>
               {teamA} vs {teamB}
@@ -362,95 +370,105 @@ const styles = StyleSheet.create({
     paddingTop: 64,
     paddingHorizontal: 20,
     paddingBottom: 40,
-    backgroundColor: "#fff",
+    backgroundColor: BillyColors.background,
   },
   title: {
-    fontSize: 30,
-    fontWeight: "700",
+    fontSize: 32,
+    fontWeight: "800",
     marginBottom: 6,
+    color: BillyColors.primary,
   },
   subtitle: {
     fontSize: 16,
     marginBottom: 20,
-    color: "#555",
+    color: BillyColors.mutedText,
   },
   card: {
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 12,
+    borderColor: BillyColors.border,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 20,
-    backgroundColor: "#fff",
+    backgroundColor: BillyColors.card,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
-  label: {
-    fontSize: 12,
-    color: "#666",
-    marginTop: 10,
-  },
-  value: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginTop: 2,
-  },
-  button: {
-    backgroundColor: "#111",
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  buttonDisabled: {
-    backgroundColor: "#999",
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    marginBottom: 10,
-  },
-  secondaryButtonText: {
-    fontWeight: "600",
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginTop: 18,
-    marginBottom: 12,
-  },
-  info: {
-    color: "#555",
-    marginBottom: 12,
-  },
-  eventCard: {
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 12,
-    marginBottom: 12,
-    backgroundColor: "#fff",
-  },
-  eventMatchup: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  eventMeta: {
-    color: "#666",
-    marginTop: 2,
-  },
-  resultText: {
-    marginTop: 8,
-    fontWeight: "600",
-  },
-  eventLink: {
-    marginTop: 10,
-    fontWeight: "700",
-    color: "#111",
-  },
+label: {
+  fontSize: 12,
+  color: BillyColors.mutedText,
+  marginTop: 10,
+  textTransform: "uppercase",
+  letterSpacing: 0.5,
+},
+value: {
+  fontSize: 18,
+  fontWeight: "700",
+  marginTop: 2,
+  color: BillyColors.text,
+},
+button: {
+  backgroundColor: BillyColors.primary,
+  padding: 14,
+  borderRadius: 12,
+  alignItems: "center",
+  marginBottom: 10,
+},
+buttonDisabled: {
+  backgroundColor: "#9f96aa",
+},
+buttonText: {
+  color: "#fff",
+  fontWeight: "700",
+},
+secondaryButton: {
+  padding: 14,
+  borderRadius: 12,
+  alignItems: "center",
+  borderWidth: 1,
+  borderColor: BillyColors.border,
+  marginBottom: 10,
+  backgroundColor: BillyColors.card,
+},
+secondaryButtonText: {
+  fontWeight: "700",
+  color: BillyColors.text,
+},
+sectionTitle: {
+  fontSize: 22,
+  fontWeight: "800",
+  marginTop: 18,
+  marginBottom: 12,
+  color: BillyColors.primary,
+},
+eventCard: {
+  padding: 16,
+  borderWidth: 1,
+  borderColor: BillyColors.border,
+  borderRadius: 16,
+  marginBottom: 12,
+  backgroundColor: BillyColors.card,
+},
+eventMatchup: {
+  fontSize: 18,
+  fontWeight: "800",
+  marginBottom: 6,
+  color: BillyColors.text,
+},
+eventMeta: {
+  color: BillyColors.mutedText,
+  marginTop: 2,
+},
+resultText: {
+  marginTop: 8,
+  fontWeight: "700",
+  color: BillyColors.primary,
+},
+eventLink: {
+  marginTop: 10,
+  fontWeight: "800",
+  color: BillyColors.primary,
+},
 });

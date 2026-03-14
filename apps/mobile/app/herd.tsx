@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Pressable, Alert, FlatList, TextInput } from "react-native";
 import { router } from "expo-router";
 import { supabase } from "../lib/supabase";
+import { BillyColors } from "../lib/theme";
 
 type Profile = {
   id: string;
@@ -266,120 +267,114 @@ export default function HerdScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 64,
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    backgroundColor: "#fff",
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 16,
-    marginBottom: 20,
-    color: "#555",
-  },
-  info: {
-    color: "#555",
-    marginBottom: 12,
-  },
-  card: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 18,
-    backgroundColor: "#fff",
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 10,
-  },
-  label: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 8,
-  },
-  value: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 6,
-  },
-  meta: {
-    color: "#666",
-    marginBottom: 4,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 12,
-  },
-  teamList: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: 12,
-  },
-  teamChip: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 999,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  teamChipActive: {
-    backgroundColor: "#111",
-    borderColor: "#111",
-  },
-  teamChipText: {
-    color: "#111",
-  },
-  teamChipTextActive: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  herdCard: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    backgroundColor: "#fff",
-  },
-  herdName: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  button: {
-    backgroundColor: "#111",
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  buttonDisabled: {
-    backgroundColor: "#999",
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    marginTop: 10,
-  },
-  secondaryButtonText: {
-    fontWeight: "600",
-  },
+  paddingTop: 64,
+  paddingHorizontal: 20,
+  paddingBottom: 40,
+  backgroundColor: BillyColors.background,
+},
+title: {
+  fontSize: 30,
+  fontWeight: "800",
+  marginBottom: 6,
+  color: BillyColors.primary,
+},
+subtitle: {
+  fontSize: 16,
+  marginBottom: 20,
+  color: BillyColors.mutedText,
+},
+card: {
+  borderWidth: 1,
+  borderColor: BillyColors.border,
+  borderRadius: 16,
+  padding: 16,
+  marginBottom: 18,
+  backgroundColor: BillyColors.card,
+},
+sectionTitle: {
+  fontSize: 20,
+  fontWeight: "800",
+  marginBottom: 10,
+  color: BillyColors.primary,
+},
+value: {
+  fontSize: 18,
+  fontWeight: "700",
+  marginBottom: 6,
+  color: BillyColors.text,
+},
+meta: {
+  color: BillyColors.mutedText,
+  marginBottom: 4,
+},
+input: {
+  borderWidth: 1,
+  borderColor: BillyColors.border,
+  borderRadius: 12,
+  padding: 14,
+  marginBottom: 12,
+  backgroundColor: "#fff",
+},
+teamChip: {
+  borderWidth: 1,
+  borderColor: BillyColors.border,
+  borderRadius: 999,
+  paddingVertical: 8,
+  paddingHorizontal: 12,
+  marginRight: 8,
+  marginBottom: 8,
+  backgroundColor: "#fff",
+},
+teamChipActive: {
+  backgroundColor: BillyColors.primary,
+  borderColor: BillyColors.primary,
+},
+teamChipText: {
+  color: BillyColors.text,
+},
+teamChipTextActive: {
+  color: "#fff",
+  fontWeight: "700",
+},
+herdCard: {
+  borderWidth: 1,
+  borderColor: BillyColors.border,
+  borderRadius: 16,
+  padding: 14,
+  marginBottom: 12,
+  backgroundColor: BillyColors.card,
+},
+herdName: {
+  fontSize: 18,
+  fontWeight: "800",
+  marginBottom: 6,
+  color: BillyColors.text,
+},
+button: {
+  backgroundColor: BillyColors.primary,
+  padding: 14,
+  borderRadius: 12,
+  alignItems: "center",
+  marginTop: 10,
+},
+buttonDisabled: {
+  backgroundColor: "#9f96aa",
+},
+buttonText: {
+  color: "#fff",
+  fontWeight: "700",
+},
+secondaryButton: {
+  padding: 14,
+  borderRadius: 12,
+  alignItems: "center",
+  borderWidth: 1,
+  borderColor: BillyColors.border,
+  marginTop: 10,
+  backgroundColor: BillyColors.card,
+},
+secondaryButtonText: {
+  fontWeight: "700",
+  color: BillyColors.text,
+},
 });

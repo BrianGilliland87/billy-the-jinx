@@ -1,0 +1,16 @@
+export const BillyColors = {
+  background: "#f7f4ef",
+  card: "#ffffff",
+  text: "#1f1b24",
+  mutedText: "#6b6472",
+  border: "#ddd6e3",
+  primary: "#4b1d6b",
+  primaryDark: "#35124b",
+  accent: "#d4af37",
+  accentSoft: "#f4e7a1",
+  successBg: "#eef8ee",
+  failureBg: "#fff1ec",
+  lockedBg: "#f1eef5",
+  openBg: "#f7fff4",
+  finalBg: "#fff8f0",
+};

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { supabase } from "../../lib/supabase";
+import { BillyColors } from "../../lib/theme";
 
 type EventDetail = {
   id: string;
@@ -92,7 +93,7 @@ export default function ResultScreen() {
       <Text style={styles.subtitle}>{teamAName} vs {teamBName}</Text>
 
       <View style={styles.heroCard}>
-        <Text style={styles.heroEmoji}>{success ? "🎉" : "😞"}</Text>
+        <Text style={styles.heroEmoji}>{success ? "🎭✨" : "💨🥀"}</Text>
         <Text style={styles.heroTitle}>
           {success ? "Billy Delivered the Curse!" : "Billy Failed to Deliver"}
         </Text>
@@ -122,9 +123,9 @@ export default function ResultScreen() {
           {success ? "Billy says:" : "Billy apologizes:"}
         </Text>
         <Text style={styles.messageText}>
-          {success
-            ? "I told you not to test the power of the snack curse."
-            : "That one slipped through my fingers. Feed me again next time."}
+         {success
+           ? "The snack spirits spoke, and Billy answered."
+           : "The curse drifted off course. Billy will need more snacks next time."}
         </Text>
       </View>
 
@@ -147,101 +148,109 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   successBg: {
-    backgroundColor: "#f6fff4",
-  },
-  failureBg: {
-    backgroundColor: "#fff8f6",
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 16,
-    marginBottom: 20,
-    color: "#555",
-  },
-  heroCard: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 18,
-    backgroundColor: "#fff",
-    alignItems: "center",
-  },
-  heroEmoji: {
-    fontSize: 48,
-    marginBottom: 10,
-  },
-  heroTitle: {
-    fontSize: 24,
-    fontWeight: "800",
-    textAlign: "center",
-    marginBottom: 10,
-  },
-  heroText: {
-    fontSize: 16,
-    lineHeight: 22,
-    textAlign: "center",
-    color: "#444",
-  },
-  card: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    backgroundColor: "#fff",
-  },
-  label: {
-    fontSize: 12,
-    color: "#666",
-    marginTop: 10,
-  },
-  value: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginTop: 2,
-  },
-  messageCard: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    backgroundColor: "#fff",
-  },
-  messageTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-  messageText: {
-    fontSize: 16,
-    lineHeight: 22,
-    color: "#444",
-  },
-  button: {
-    backgroundColor: "#111",
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
-  },
-  secondaryButtonText: {
-    fontWeight: "600",
-  },
+  backgroundColor: BillyColors.successBg,
+},
+failureBg: {
+  backgroundColor: BillyColors.failureBg,
+},
+title: {
+  fontSize: 30,
+  fontWeight: "800",
+  marginBottom: 6,
+  color: BillyColors.primary,
+},
+subtitle: {
+  fontSize: 16,
+  marginBottom: 20,
+  color: BillyColors.mutedText,
+},
+heroCard: {
+  borderWidth: 1,
+  borderColor: BillyColors.border,
+  borderRadius: 18,
+  padding: 20,
+  marginBottom: 18,
+  backgroundColor: BillyColors.card,
+  alignItems: "center",
+},
+heroEmoji: {
+  fontSize: 34,
+  marginBottom: 10,
+},
+heroTitle: {
+  fontSize: 24,
+  fontWeight: "800",
+  textAlign: "center",
+  marginBottom: 10,
+  color: BillyColors.primary,
+},
+heroText: {
+  fontSize: 16,
+  lineHeight: 22,
+  textAlign: "center",
+  color: BillyColors.text,
+},
+card: {
+  borderWidth: 1,
+  borderColor: BillyColors.border,
+  borderRadius: 16,
+  padding: 16,
+  marginBottom: 16,
+  backgroundColor: BillyColors.card,
+},
+label: {
+  fontSize: 12,
+  color: BillyColors.mutedText,
+  marginTop: 10,
+  textTransform: "uppercase",
+  letterSpacing: 0.5,
+},
+value: {
+  fontSize: 18,
+  fontWeight: "700",
+  marginTop: 2,
+  color: BillyColors.text,
+},
+messageCard: {
+  borderWidth: 1,
+  borderColor: BillyColors.border,
+  borderRadius: 16,
+  padding: 16,
+  marginBottom: 20,
+  backgroundColor: BillyColors.card,
+},
+messageTitle: {
+  fontSize: 18,
+  fontWeight: "800",
+  marginBottom: 8,
+  color: BillyColors.primary,
+},
+messageText: {
+  fontSize: 16,
+  lineHeight: 22,
+  color: BillyColors.text,
+},
+button: {
+  backgroundColor: BillyColors.primary,
+  padding: 14,
+  borderRadius: 12,
+  alignItems: "center",
+  marginBottom: 10,
+},
+buttonText: {
+  color: "#fff",
+  fontWeight: "700",
+},
+secondaryButton: {
+  padding: 14,
+  borderRadius: 12,
+  alignItems: "center",
+  borderWidth: 1,
+  borderColor: BillyColors.border,
+  backgroundColor: BillyColors.card,
+},
+secondaryButtonText: {
+  fontWeight: "700",
+  color: BillyColors.text,
+},
 });
