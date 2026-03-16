@@ -1,0 +1,24 @@
+name: Copilot Setup Steps
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install mobile dependencies
+        run: |
+          cd apps/mobile
+          npm install
+
+      - name: Install admin dependencies
+        run: |
+          cd apps/admin
+          npm install
