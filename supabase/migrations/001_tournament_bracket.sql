@@ -62,7 +62,7 @@ END $$;
 
 ALTER TABLE events
   ADD CONSTRAINT events_status_check
-  CHECK (status IN ('pending', 'scheduled', 'locked', 'final'));
+  CHECK (status IN ('pending', 'open', 'locked', 'final'));
 
 -- New bracket columns
 ALTER TABLE events
@@ -148,12 +148,49 @@ CREATE INDEX IF NOT EXISTS user_event_selections_event_id_idx ON user_event_sele
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS trigger
 LANGUAGE plpgsql
-SECURITY DEFINER SET search_path = public
+SECURITY DEFINER
+SET search_path = public
 AS $$
+DECLARE
+  v_has_username boolean;
+  v_username text;
 BEGIN
-  INSERT INTO public.profiles (id, email, free_snack_balance)
-  VALUES (new.id, new.email, 50)
-  ON CONFLICT (id) DO NOTHING;
+  SELECT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'profiles'
+      AND column_name = 'username'
+  ) INTO v_has_username;
+
+  v_username := NULLIF(
+    TRIM(
+      COALESCE(
+        new.raw_user_meta_data ->> 'username',
+        new.raw_user_meta_data ->> 'user_name',
+        split_part(COALESCE(new.email, ''), '@', 1)
+      )
+    ),
+    ''
+  );
+
+  IF v_has_username THEN
+    BEGIN
+      INSERT INTO public.profiles (id, email, username, free_snack_balance)
+      VALUES (new.id, new.email, v_username, 50)
+      ON CONFLICT (id) DO NOTHING;
+    EXCEPTION
+      WHEN unique_violation THEN
+        INSERT INTO public.profiles (id, email, free_snack_balance)
+        VALUES (new.id, new.email, 50)
+        ON CONFLICT (id) DO NOTHING;
+    END;
+  ELSE
+    INSERT INTO public.profiles (id, email, free_snack_balance)
+    VALUES (new.id, new.email, 50)
+    ON CONFLICT (id) DO NOTHING;
+  END IF;
+
   RETURN new;
 END;
 $$;
@@ -176,13 +213,16 @@ CREATE OR REPLACE FUNCTION resolve_event_and_advance_winner(
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
-  v_event         events%ROWTYPE;
-  v_next_event    events%ROWTYPE;
-  v_curse_success boolean;
+  v_event          events%ROWTYPE;
+  v_next_event     events%ROWTYPE;
+  v_curse_success  boolean;
+  v_has_resolved_at boolean;
+  v_has_updated_at  boolean;
+  v_sql            text;
 BEGIN
-  -- Load the event
   SELECT * INTO v_event FROM events WHERE id = p_event_id;
 
   IF v_event.id IS NULL THEN
@@ -195,62 +235,77 @@ BEGIN
 
   IF p_winning_team_id IS DISTINCT FROM v_event.team_a_id
      AND p_winning_team_id IS DISTINCT FROM v_event.team_b_id THEN
-    RAISE EXCEPTION 'Team % is not a participant in event %',
-      p_winning_team_id, p_event_id;
+    RAISE EXCEPTION 'Team % is not a participant in event %', p_winning_team_id, p_event_id;
   END IF;
 
-  -- Determine curse outcome
   v_curse_success := (
     v_event.billy_support_team_id IS NOT NULL
     AND v_event.billy_support_team_id IS DISTINCT FROM p_winning_team_id
   );
 
-  -- Mark event as final
-  UPDATE events
-  SET
-    status          = 'final',
-    winning_team_id = p_winning_team_id,
-    curse_success   = v_curse_success
-  WHERE id = p_event_id;
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'events' AND column_name = 'resolved_at'
+  ) INTO v_has_resolved_at;
 
-  -- Refund paid snacks when curse failed
-  IF NOT v_curse_success AND v_event.billy_support_team_id IS NOT NULL THEN
-    UPDATE profiles p
-    SET paid_snack_balance = p.paid_snack_balance + ec.snacks_paid
-    FROM event_contributions ec
-    WHERE ec.event_id   = p_event_id
-      AND ec.user_id    = p.id
-      AND ec.snacks_paid > 0;
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'events' AND column_name = 'updated_at'
+  ) INTO v_has_updated_at;
+
+  v_sql := 'UPDATE events
+            SET status = ''final'',
+                winning_team_id = $1,
+                curse_success = $2';
+
+  IF v_has_resolved_at THEN
+    v_sql := v_sql || ', resolved_at = now()';
   END IF;
 
-  -- Advance winner to next bracket event if one is configured
+  IF v_has_updated_at THEN
+    v_sql := v_sql || ', updated_at = now()';
+  END IF;
+
+  v_sql := v_sql || ' WHERE id = $3';
+  EXECUTE v_sql USING p_winning_team_id, v_curse_success, p_event_id;
+
+  -- TODO: Refund logic intentionally omitted.
+  -- Prior SQL referenced event_contributions, which is not part of the current schema.
+  -- Re-add only after confirming snack_ledger linkage to event participation records.
+
   IF v_event.next_event_id IS NOT NULL AND v_event.next_event_slot IS NOT NULL THEN
     SELECT * INTO v_next_event FROM events WHERE id = v_event.next_event_id;
 
     IF v_event.next_event_slot = 'team_a' THEN
       IF v_next_event.team_a_id IS NOT NULL THEN
-        RAISE EXCEPTION
-          'Slot team_a in event % is already occupied', v_event.next_event_id;
+        RAISE EXCEPTION 'Slot team_a in event % is already occupied', v_event.next_event_id;
       END IF;
-      UPDATE events SET team_a_id = p_winning_team_id
-      WHERE id = v_event.next_event_id;
-
+      v_sql := 'UPDATE events SET team_a_id = $1';
     ELSIF v_event.next_event_slot = 'team_b' THEN
       IF v_next_event.team_b_id IS NOT NULL THEN
-        RAISE EXCEPTION
-          'Slot team_b in event % is already occupied', v_event.next_event_id;
+        RAISE EXCEPTION 'Slot team_b in event % is already occupied', v_event.next_event_id;
       END IF;
-      UPDATE events SET team_b_id = p_winning_team_id
-      WHERE id = v_event.next_event_id;
+      v_sql := 'UPDATE events SET team_b_id = $1';
+    ELSE
+      RAISE EXCEPTION 'Invalid next_event_slot % for event %', v_event.next_event_slot, p_event_id;
     END IF;
 
-    -- Promote next event from pending → scheduled once both teams are set
-    UPDATE events
-    SET status = 'scheduled'
-    WHERE id           = v_event.next_event_id
-      AND team_a_id IS NOT NULL
-      AND team_b_id IS NOT NULL
-      AND status        = 'pending';
+    IF v_has_updated_at THEN
+      v_sql := v_sql || ', updated_at = now()';
+    END IF;
+
+    v_sql := v_sql || ' WHERE id = $2';
+    EXECUTE v_sql USING p_winning_team_id, v_event.next_event_id;
+
+    v_sql := 'UPDATE events SET status = ''open''';
+    IF v_has_updated_at THEN
+      v_sql := v_sql || ', updated_at = now()';
+    END IF;
+    v_sql := v_sql || ' WHERE id = $1
+                         AND team_a_id IS NOT NULL
+                         AND team_b_id IS NOT NULL
+                         AND status = ''pending''';
+    EXECUTE v_sql USING v_event.next_event_id;
   END IF;
 END;
 $$;
@@ -259,9 +314,9 @@ $$;
 -- ============================================================
 -- 7. set_event_matchup RPC
 --    Admin assigns teams and schedule to an opening-round event
---    (FF or R64).  Safe to call on a pending bracket shell.
+--    (FF or R64). Safe to call on a pending bracket shell.
 -- ============================================================
-CREATE OR REPLACE FUNCTION set_event_matchup(
+CREATE OR REPLACE FUNCTION public.set_event_matchup(
   p_event_id               uuid,
   p_team_a_id              uuid,
   p_team_b_id              uuid,
@@ -271,24 +326,49 @@ CREATE OR REPLACE FUNCTION set_event_matchup(
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
+DECLARE
+  v_has_updated_at boolean;
+  v_sql            text;
 BEGIN
-  UPDATE events
-  SET
-    team_a_id              = p_team_a_id,
-    team_b_id              = p_team_b_id,
-    scheduled_start        = p_scheduled_start,
-    contributions_close_at = p_contributions_close_at,
-    status                 = 'scheduled'
-  WHERE id = p_event_id
-    AND status IN ('pending', 'scheduled');
+  IF p_team_a_id = p_team_b_id THEN
+    RAISE EXCEPTION 'An event cannot have the same team in both slots';
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'events'
+      AND column_name = 'updated_at'
+  ) INTO v_has_updated_at;
+
+  v_sql := '
+    UPDATE public.events
+    SET
+      team_a_id = $1,
+      team_b_id = $2,
+      scheduled_start = $3,
+      contributions_close_at = $4,
+      status = ''open''';
+
+  IF v_has_updated_at THEN
+    v_sql := v_sql || ', updated_at = now()';
+  END IF;
+
+  v_sql := v_sql || '
+    WHERE id = $5
+      AND status IN (''pending'', ''open'')';
+
+  EXECUTE v_sql
+    USING p_team_a_id, p_team_b_id, p_scheduled_start, p_contributions_close_at, p_event_id;
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Event % not found or is not in a modifiable state', p_event_id;
   END IF;
 END;
 $$;
-
 
 -- ============================================================
 -- 8. select_all_active_games RPC (mobile)
@@ -299,6 +379,7 @@ CREATE OR REPLACE FUNCTION select_all_active_games()
 RETURNS integer
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   v_user_id uuid;
@@ -312,7 +393,7 @@ BEGIN
   INSERT INTO user_event_selections (user_id, event_id, is_selected)
   SELECT v_user_id, e.id, true
   FROM events e
-  WHERE e.status IN ('scheduled', 'locked')
+  WHERE e.status IN ('open', 'locked')
     AND e.team_a_id IS NOT NULL
     AND e.team_b_id IS NOT NULL
   ON CONFLICT (user_id, event_id)
@@ -331,6 +412,7 @@ CREATE OR REPLACE FUNCTION clear_all_game_selections()
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   v_user_id uuid;
@@ -343,3 +425,16 @@ BEGIN
   DELETE FROM user_event_selections WHERE user_id = v_user_id;
 END;
 $$;
+
+
+-- ============================================================
+-- 10. RPC grants
+-- ============================================================
+GRANT EXECUTE ON FUNCTION public.resolve_event_and_advance_winner(uuid, uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION public.set_event_matchup(uuid, uuid, uuid, timestamptz, timestamptz) TO service_role;
+GRANT EXECUTE ON FUNCTION public.resolve_event_and_advance_winner(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.set_event_matchup(uuid, uuid, uuid, timestamptz, timestamptz) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.select_all_active_games() TO service_role;
+GRANT EXECUTE ON FUNCTION public.select_all_active_games() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.clear_all_game_selections() TO service_role;
+GRANT EXECUTE ON FUNCTION public.clear_all_game_selections() TO authenticated;

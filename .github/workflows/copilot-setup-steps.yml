@@ -3,26 +3,15 @@ name: Copilot Setup Steps
 on:
   workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
-  setup:
+  copilot-setup-steps:
     runs-on: ubuntu-latest
 
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
-      - name: Install mobile dependencies
-        run: |
-          cd apps/mobile
-          npm install
-
-      - name: Install admin dependencies
-        run: |
-          cd apps/admin
-          npm install
+      - name:
