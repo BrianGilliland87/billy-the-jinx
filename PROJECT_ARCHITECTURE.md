@@ -29,6 +29,7 @@ Responsibilities:
 - user accounts
 - event participation
 - snack contributions
+- game selection (follow/unfollow games)
 - notifications
 - herd system
 - snack store
@@ -42,11 +43,11 @@ Framework:
 - Next.js
 - TypeScript
 
-Responsibilities:
-- manage teams
-- create events
-- resolve game winners
-- operate tournament progression
+Pages:
+- `/` – Events list with round filter and resolve-and-advance
+- `/bracket` – Full bracket view with Set Matchup tool
+- `/tournament` – Tournament creation and bracket skeleton generation
+- `/teams` – Team management with seed and region support
 
 ---
 
@@ -60,6 +61,10 @@ Components:
 - authentication
 - row-level security
 - RPC functions
+
+Database migrations:
+- `supabase/migrations/001_tournament_bracket.sql` – schema + RPCs
+- `supabase/migrations/002_bracket_skeleton.sql` – bracket creation function
 
 ---
 
@@ -91,7 +96,7 @@ If the curse fails, paid snacks used in that event are refunded.
 
 Snack sources:
 
-- starter snacks (signup bonus)
+- starter snacks (50 free snacks on signup)
 - daily snack claim
 - purchased snack packs
 - rewarded ad snacks
@@ -118,15 +123,19 @@ All snack transactions recorded in:
 
 # Event Lifecycle
 
-Events progress through three states:
+Events progress through four states:
 
+- pending
 - scheduled
 - locked
 - final
 
 
+### Pending
+Bracket shell created; awaiting team assignment.
+
 ### Scheduled
-Users can contribute snacks.
+Both teams assigned; users can contribute snacks.
 
 ### Locked
 Contributions closed 10 minutes before game start.
@@ -150,34 +159,66 @@ Events include:
 - billy_support_team_id
 - winning_team_id
 - curse_success
+- tournament_year
+- round_order
+- bracket_slot
+- team_a_source_event_id
+- team_b_source_event_id
+- next_event_id
+- next_event_slot
 
 
 ---
 
 # Tournament Architecture
 
-The system will support a full NCAA tournament structure.
+The system supports a full NCAA tournament structure.
 
-Rounds:
+Rounds (round_order):
 
-- First Four
-- Round of 64
-- Round of 32
-- Sweet Sixteen
-- Elite Eight
-- Final Four
-- Championship
+| round_order | Round |
+|-------------|-------|
+| 1 | First Four |
+| 2 | Round of 64 |
+| 3 | Round of 32 |
+| 4 | Sweet Sixteen |
+| 5 | Elite Eight |
+| 6 | Final Four |
+| 7 | Championship |
 
+Bracket slots:
 
-Each event may define:
+- FF-01 … FF-04
+- R64-01 … R64-32
+- R32-01 … R32-16
+- S16-01 … S16-08
+- E8-01 … E8-04
+- F4-01, F4-02
+- CH-01
 
-- next_event_id
-- next_event_slot
-- team_a_source_event_id
-- team_b_source_event_id
+Every event explicitly stores:
 
+- next_event_id – which event the winner advances to
+- next_event_slot – team_a or team_b in that next event
+- team_a_source_event_id – prior event whose winner becomes team A
+- team_b_source_event_id – prior event whose winner becomes team B
 
-This allows **automatic bracket advancement** when winners are resolved.
+This allows **automatic bracket advancement** when winners are resolved
+without any name-based inference.
+
+Regional structure:
+
+- East:    R64-01 … R64-08
+- Midwest: R64-09 … R64-16
+- South:   R64-17 … R64-24
+- West:    R64-25 … R64-32
+
+First Four play-in assignments:
+
+- FF-01 → R64-01 team_b (East 1 vs 16)
+- FF-02 → R64-17 team_b (South 1 vs 16)
+- FF-03 → R64-06 team_b (East 6 vs 11)
+- FF-04 → R64-22 team_b (South 6 vs 11)
 
 ---
 
@@ -197,6 +238,23 @@ Tables:
 - herds
 - herd_members
 
+
+---
+
+# Game Selection System
+
+Users can select which games to follow.
+
+Tables:
+
+- user_event_selections (user_id, event_id, is_selected)
+
+RPCs:
+
+- select_all_active_games() – select all currently active games
+- clear_all_game_selections() – remove all user game selections
+
+Mobile screen: `apps/mobile/app/games.tsx`
 
 ---
 
@@ -247,13 +305,30 @@ Future implementation:
 
 Admin tasks include:
 
-1. create tournament teams
-2. create events
-3. resolve game winners
-4. advance tournament bracket
-5. manage tournament progression
+1. create tournament year (`/tournament`)
+2. add teams with seed and region (`/teams`)
+3. build bracket skeleton – calls `create_tournament_bracket(year)`
+4. assign teams to opening matchups – calls `set_event_matchup` RPC
+5. resolve game winners – calls `resolve_event_and_advance_winner` RPC
+6. winners auto-advance to the next bracket event
 
-Admin actions trigger backend RPC functions.
+---
+
+# RPC Functions
+
+| Function | Description |
+|----------|-------------|
+| `resolve_event_and_advance_winner` | Resolve game, calculate curse, advance winner |
+| `resolve_event_result` | Legacy: resolve game only |
+| `set_event_matchup` | Assign teams and schedule to an opening-round event |
+| `create_tournament_bracket` | Create all 67 bracket shells for a year |
+| `select_all_active_games` | Mobile: select all currently active games |
+| `clear_all_game_selections` | Mobile: clear all user game selections |
+| `contribute_snack` | User contributes snack to an event |
+| `purchase_snack_pack` | User buys snack pack |
+| `claim_ad_snack` | User claims ad reward |
+| `join_herd` | User joins a herd |
+| `create_notification_for_user` | Create in-app notification |
 
 ---
 
@@ -264,6 +339,9 @@ Important rules enforced in database logic:
 - snack balances cannot go negative
 - locked events cannot accept contributions
 - final events cannot be modified
+- final events cannot be re-resolved
+- winners only advance if next_event_id is set
+- advancement does not overwrite an already-filled slot
 - only event participants receive result notifications
 
 ---
@@ -275,6 +353,7 @@ Supabase Row-Level Security policies enforce:
 - users can only view their own profile
 - users can only update their own balances
 - users cannot modify events
+- users can only manage their own game selections
 - admin actions use secure RPC functions
 
 ---
@@ -289,6 +368,7 @@ Planned improvements:
 - bracket visualization
 - improved herd leaderboards
 - season history
+- follow-favorite-team game selection path
 
 ---
 
@@ -299,6 +379,10 @@ billy-the-jinx
 ├ apps
 │ ├ mobile
 │ └ admin
+│
+├ supabase
+│ ├ migrations
+│ └ README.md
 │
 ├ .github
 │ ├ prompts
@@ -316,7 +400,7 @@ Status: **Beta 1**
 Completed systems:
 
 - authentication
-- snack economy
+- snack economy (50 starter snacks)
 - event contributions
 - Billy leaning logic
 - curse resolution
@@ -324,7 +408,12 @@ Completed systems:
 - herd system
 - visual UI
 - store placeholders
+- tournament bracket schema
+- bracket creation function (67 game shells, fully wired)
+- resolve-and-advance RPC
+- admin bracket management UI
+- mobile game-selection system
 
 Next development milestone:
 
-**Full 68-team tournament architecture**
+**Phase 6 – mobile game selection UX polish and bracket visualization**
